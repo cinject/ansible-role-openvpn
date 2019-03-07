@@ -1,0 +1,7 @@
+- name: Ensure openvpn is installed.
+  yum: name=openvpn state=installed
+
+- include_tasks: nested_loop.yml
+  vars:
+    obj: "{{item}}"
+  with_items: "{{ openvpn_conf }}"

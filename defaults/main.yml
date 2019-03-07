@@ -1,0 +1,10 @@
+---
+
+openvpn_conf_server_template: server.conf.j2
+openvpn_conf_client_template: client.conf.j2
+openvpn_path: /etc/openvpn
+openvpn_conf: []
+
+  
+__modify_configs: []
+__remove_configs: []

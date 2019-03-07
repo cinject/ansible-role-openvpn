@@ -1,0 +1,9 @@
+---
+
+- name: restart list openvpn
+  service: name=openvpn@{{ item }} state=restarted enabled=yes
+  with_items: "{{ __modify_configs }}"
+  
+- name: stop list openvpn
+  service: name=openvpn@{{ item }} state=stopped enabled=no
+  with_items: "{{ __remove_configs }}"

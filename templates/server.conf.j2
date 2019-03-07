@@ -1,0 +1,30 @@
+# Server | {{ ansible_managed }}
+
+port    {{ item.port | default('1194') }}
+proto   {{ item.proto | default('udp')}}
+dev     {{ item.dev | default('tun') }}
+
+ca      {{ openvpn_path }}/{{ item.name }}/{{ item.ca }}
+cert    {{ openvpn_path }}/{{ item.name }}/{{ item.cert }}
+key     {{ openvpn_path }}/{{ item.name }}/{{ item.key }}
+dh      {{ openvpn_path }}/{{ item.name }}/{{ item.dh }}
+
+tls-auth {{ openvpn_path }}/{{ item.name }}/{{ item.ta }} 0
+
+server  {{ item.server }}
+keepalive {{ item.keepalive | default('10 120') }}
+cipher {{ item.cipher | default('AES-256-CBC') }}
+
+comp-lzo
+
+persist-key
+persist-tun
+
+explicit-exit-notify {{ item.explicit_exit_notify | default('1') }}
+
+status {{ item.name }}-status.log
+verb {{ item.verb | default('3') }}
+
+{% if item.extra_params is defined %}
+{{ item.extra_params }}
+{% endif %}
