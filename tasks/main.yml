@@ -1,5 +1,5 @@
-- name: Ensure openvpn is installed.
-  package: name=openvpn state=installed
+- name: Ensure openvpn is present.
+  package: name=openvpn state=present
 
 - include_tasks: nested_loop.yml
   vars:
