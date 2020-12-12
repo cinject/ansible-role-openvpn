@@ -1,47 +1,46 @@
-- name: Ensures {{ openvpn_path }}/{{ obj.name }} dir exists
-  file: path={{ openvpn_path }}/{{ obj.name }} state=directory
-  register: r_vpn_dir
-  notify: restart list openvpn
-  when: obj.state|default('present') != 'absent'
+- block:
+  - name: Ensures {{ openvpn_path }}/{{ obj.name }} dir exists
+    file: path={{ openvpn_path }}/{{ obj.name }} state=directory
+    register: r_vpn_dir
+    notify: restart list openvpn
   
-- name: Copy keys to remote host
-  copy:
-    src: "{{ fetch_private_dir }}/openvpn/{{ obj.name }}/"
-    dest: "{{ openvpn_path }}/{{ obj.name }}/"
-  register: r_copy_keys
-  notify: restart list openvpn
+  - name: Copy keys to remote host
+    copy:
+      src: "{{ fetch_private_dir }}/openvpn/{{ obj.name }}/"
+      dest: "{{ openvpn_path }}/{{ obj.name }}/"
+    register: r_copy_keys
+    notify: restart list openvpn
+  
+  - name: Generate tls-auth keys
+    command: openvpn --genkey --secret {{ obj.ta }}
+      chdir="{{ openvpn_path }}/{{ obj.name }}/"
+      creates="{{ obj.ta }}"
+    args: { creates: "{{ openvpn_path }}/{{ obj.name }}/{{ obj.ta }}" }
+    register: r_gen_ta
+    notify: restart list openvpn
+  
+  - name: Downloading ta.key to HOST
+    fetch:
+      src: "{{ openvpn_path }}/{{ obj.name }}/{{ obj.ta }}"
+      dest: "{{ fetch_private_dir }}/openvpn/{{ obj.name }}/{{ obj.ta }}"
+      flat: yes
+
+  - name: Add config files
+    template:
+      src: "{{ obj.template|default(openvpn_conf_server_template if obj.server is defined else openvpn_conf_client_template) }}"
+      dest: "{{ openvpn_path }}/{{ obj.name }}.conf"
+    register: r_add_config
+    notify: restart list openvpn
+  
   when: obj.state|default('present') != 'absent'
+
   
 - name: Remove keys from remote host
   file: path={{ openvpn_path }}/{{ obj.name }} state=absent
   register: r_remove_keys
   notify: stop list openvpn
   when: obj.state|default('present') == 'absent'
-  
-- name: Generate tls-auth keys
-  command: openvpn --genkey --secret {{ obj.ta }}
-    chdir="{{ openvpn_path }}/{{ obj.name }}/"
-    creates="{{ obj.ta }}"
-  args: { creates: "{{ openvpn_path }}/{{ obj.name }}/{{ obj.ta }}" }
-  register: r_gen_ta
-  notify: restart list openvpn
-  when: obj.state|default('present') != 'absent'
-  
-- name: Downloading ta.key to HOST
-  fetch:
-    src: "{{ openvpn_path }}/{{ obj.name }}/{{ obj.ta }}"
-    dest: "{{ fetch_private_dir }}/openvpn/{{ obj.name }}/{{ obj.ta }}"
-    flat: yes
-  when: obj.state|default('present') != 'absent'
 
-- name: Add config files
-  template:
-    src: "{{ obj.template|default(openvpn_conf_server_template if obj.server is defined else openvpn_conf_client_template) }}"
-    dest: "{{ openvpn_path }}/{{ obj.name }}.conf"
-  register: r_add_config
-  notify: restart list openvpn
-  when: obj.state|default('present') != 'absent'
-  
 - name: Remove config files
   file:
     path: "{{ openvpn_path }}/{{ obj.name }}.conf"
